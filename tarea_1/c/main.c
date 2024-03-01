@@ -1,94 +1,108 @@
+// Facultad de Ingeniería Eléctrica - Ingeniería en Computación UMSNH
+// Materia: Laboratorio de Graficación 2024-2024
+// Profesor: Ing. César Dionicio Arreola Rodríguez
+// Alumno: Octavio Antonio Juárez Romero
+// Matrícula: 1577250a
+
+// Tarea #1: Generador de arreglos hexadecimales.
+// Este programa genera arreglos de caracteres aleatorios y los escribe en archivos de texto.
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #include <time.h>
-#include <unistd.h>
 
-#define NUM_HILOS 4
-#define TAM_ARR 6
+#define NUM_THREADS 4
+#define ARRAY_SIZE 7 // 6 posiciones + 1 para el caracter nulo
+#define MAX_ARRAY_SIZE 1000
+#define MAX_CONTIGUOS 2
 
-typedef struct {
-    int id_hilo;
-    int cantidad_generada;
-    char nombre_archivo[50];
-} datos_hilo;
 
 // Prototipos de funciones
-void *funcion_hilo(void *arg);
+void *threadFunction(void *threadid);
 int verificar(char *arreglo);
-void escribir_archivo(char *nombre_archivo, char *arreglo);
+void generarHexadecimal(char *arreglo);
+void escribirArchivo(char *arreglo, int threadID);
 
-void *funcion_hilo(void *arg) {
-    datos_hilo *datos = (datos_hilo *)arg;
-    int generados = 0;
-    char arreglo[TAM_ARR + 1];
-
-    while (1) { // Bucle para generar continuamente hasta que se cumpla una condición de parada
-        // Generar arreglo aquí, asegurarse de que no haya caracteres contiguos iguales
-        // ...
-
-        if (verificar(arreglo)) {
-            escribir_archivo(datos->nombre_archivo, arreglo);
-            generados++;
-        }
-
-        // Condición de parada (podría ser una cantidad de arreglos o un tiempo determinado)
-        // ...
+void generarHexadecimal(char *arreglo) {
+    const char hexChars[] = "0123456789abcdef";
+    for (int i = 0; i < ARRAY_SIZE - 1; i++) { // Deja espacio para el caracter nulo
+        int randIndex = rand() % 16; // Genera un índice aleatorio para hexChars
+        arreglo[i] = hexChars[randIndex];
     }
-
-    datos->cantidad_generada = generados;
-    pthread_exit(NULL);
+    arreglo[ARRAY_SIZE - 1] = '\0'; // Asegura que el arreglo sea una cadena válida
 }
 
 int verificar(char *arreglo) {
-    // Comprobar que no haya caracteres iguales contiguos
-    // ...
-    return 1; // Retornar 1 si es válido, 0 de lo contrario
-}
+    int contador = 1; // Inicia el contador para el primer carácter.
 
-void escribir_archivo(char *nombre_archivo, char *arreglo) {
-    FILE *archivo = fopen(nombre_archivo, "a");
-    if (archivo != NULL) {
-        fputs(arreglo, archivo);
-        fputs("\n", archivo);
-        fclose(archivo);
-    } else {
-        fprintf(stderr, "Error al abrir el archivo %s\n", nombre_archivo);
-    }
-}
-
-int main() {
-    pthread_t hilos[NUM_HILOS];
-    datos_hilo datos[NUM_HILOS];
-    int i;
-
-    // Iniciar contador de tiempo
-    clock_t inicio = clock();
-
-    // Crear y ejecutar hilos
-    for (i = 0; i < NUM_HILOS; i++) {
-        datos[i].id_hilo = i;
-        sprintf(datos[i].nombre_archivo, "hilo%d.txt", i);
-        if (pthread_create(&hilos[i], NULL, funcion_hilo, &datos[i]) != 0) {
-            perror("Failed to create thread");
+    for (int i = 0; i < ARRAY_SIZE - 2; i++) { // Ajuste en el límite para comparación segura.
+        if (arreglo[i] == arreglo[i + 1]) {
+            // Incrementa el contador si el carácter actual es igual al siguiente.
+            contador++;
+            // Verifica si el contador excede el máximo de caracteres contiguos permitidos.
+            if (contador > MAX_CONTIGUOS) {
+                return 0; // El arreglo no es válido si se excede el límite.
+            }
+        } else {
+            // Reinicia el contador si el carácter actual es diferente al siguiente.
+            contador = 1;
         }
     }
 
-    // Esperar a que los hilos terminen
-    for (i = 0; i < NUM_HILOS; i++) {
-        pthread_join(hilos[i], NULL);
+    return 1; // Retorna 1 si el arreglo cumple con la restricción de contigüidad.
+}
+
+void escribirArchivo(char *arreglo, int threadID) {
+    char filename[20];
+    sprintf(filename, "hilo%d.txt", threadID); // Crea un nombre de archivo único para cada hilo
+    FILE *file = fopen(filename, "a"); // Abre el archivo en modo de añadir
+    if (file != NULL) {
+        fprintf(file, "%s\n", arreglo); // Escribe el arreglo en el archivo
+        fclose(file); // Cierra el archivo
+    } else {
+        fprintf(stderr, "Error abriendo el archivo %s\n", filename);
+    }
+}
+
+void *threadFunction(void *threadid) {
+    long threadID = (long)(intptr_t)threadid;
+    char arreglo[ARRAY_SIZE];
+
+    for (int i = 0; i < MAX_ARRAY_SIZE; i++) { // Ejemplo: cada hilo intenta generar 1000 arreglos
+        generarHexadecimal(arreglo);
+        if (verificar(arreglo)) {
+            escribirArchivo(arreglo, threadID);
+        }
+    }
+    pthread_exit(NULL);
+}
+
+int main() {
+    srand(time(NULL)); // Inicializa el generador de números aleatorios
+
+    pthread_t threads[NUM_THREADS];
+    int rc;
+    long t;
+
+    clock_t start = clock();
+
+    for(t = 0; t < NUM_THREADS; t++) {
+        rc = pthread_create(&threads[t], NULL, threadFunction, (void *)(intptr_t)t);
+        if (rc) {
+            printf("ERROR; el código de retorno de pthread_create() es %d\n", rc);
+            exit(-1);
+        }
     }
 
-    // Finalizar contador de tiempo y calcular duración
-    clock_t fin = clock();
-    double tiempo_transcurrido = (double)(fin - inicio) / CLOCKS_PER_SEC;
-
-    // Imprimir resultados
-    printf("Tiempo de ejecución: %.2f segundos\n", tiempo_transcurrido);
-    for (i = 0; i < NUM_HILOS; i++) {
-        printf("Hilo %d generó %d arreglos válidos.\n", i, datos[i].cantidad_generada);
+    for(t = 0; t < NUM_THREADS; t++) {
+        pthread_join(threads[t], NULL);
     }
 
-    return 0;
+    clock_t end = clock();
+    double time_spent = (double)(end - start) / CLOCKS_PER_SEC;
+    printf("Tiempo de ejecución: %f segundos\n", time_spent);
+
+    pthread_exit(NULL);
 }
