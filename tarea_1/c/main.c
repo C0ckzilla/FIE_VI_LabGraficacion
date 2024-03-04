@@ -12,7 +12,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <time.h>
-
+#include <direct.h> // Para _getcwd en entornos específicos de Windows
 #define NUM_THREADS 4
 #define ARRAY_SIZE 7 // 6 posiciones + 1 para el caracter nulo
 #define MAX_ARRAY_SIZE 1000
@@ -80,6 +80,13 @@ void *threadFunction(void *threadid) {
 }
 
 int main() {
+    char cwd[FILENAME_MAX];
+    if (_getcwd(cwd, sizeof(cwd)) != NULL) {
+        printf("Directorio de trabajo actual: %s\n", cwd);
+    } else {
+        perror("Error al obtener el directorio de trabajo actual");
+        return EXIT_FAILURE;
+    }
     srand(time(NULL)); // Inicializa el generador de números aleatorios
 
     pthread_t threads[NUM_THREADS];
