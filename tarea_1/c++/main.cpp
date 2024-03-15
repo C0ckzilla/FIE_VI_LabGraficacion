@@ -1,3 +1,10 @@
+// Facultad de Ingeniería Eléctrica - Ingeniería en Computación UMSNH
+// Materia: Laboratorio de Graficación 2024-2024
+// Profesor: Ing. César Dionicio Arreola Rodríguez
+// Alumno: Octavio Antonio Juárez Romero
+// Matrícula: 1577250a
+
+// Tarea #1: Generador de arreglos hexadecimales: versión c++. 
 #include <iostream>
 #include <string>
 #include <thread>
