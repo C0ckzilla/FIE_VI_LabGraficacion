@@ -75,9 +75,4 @@
       "username": "test"
     }
   ]
-
 }
-      "files.associations": {
-        "stdlib.h": "c"
-      }
-  }
