@@ -1,6 +1,13 @@
 {
     "tasks": [
         {
+        }
+    ],
+    "version": "2.0.0"
+}
+{
+    "tasks": [
+        {
             "type": "cppbuild",
             "label": "C/C++: tdm64-gcc-10.3.0-2.exe build active file",
             "command": "c:\\TDM-GCC-64\\__installer\\tdm64-gcc-10.3.0-2.exe",
